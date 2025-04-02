@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { signIn } from "@/app/actions/auth"
+import { supabase } from "@/lib/supabase"
 
 export function AdminLogin() {
   const [email, setEmail] = useState("")
@@ -19,17 +19,25 @@ export function AdminLogin() {
     setError("")
 
     try {
-      const result = await signIn(email, password)
+      console.log("Attempting to sign in...")
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      if (!result.success) {
-        setError(result.error || "Invalid credentials")
-      } else {
-        router.push("/admin")
-        router.refresh()
+      if (error) {
+        console.error("Sign in error:", error)
+        setError(error.message || "Invalid credentials")
+        setIsLoading(false)
+        return
       }
+
+      console.log("Sign in successful")
+      router.push("/admin")
+      router.refresh()
     } catch (err) {
+      console.error("Unexpected error during sign in:", err)
       setError("An unexpected error occurred")
-    } finally {
       setIsLoading(false)
     }
   }
@@ -79,7 +87,14 @@ export function AdminLogin() {
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-center text-gray-500">Contact your administrator for access</p>
+        <div className="mt-6 text-sm text-center text-gray-500">
+          <p>Contact your administrator for access</p>
+          <p className="mt-2">
+            <a href="/" className="text-blue-600 hover:underline">
+              Return to Home
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   )
